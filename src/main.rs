@@ -16,12 +16,47 @@ fn main() {
         // Removes trailing \n
         input.pop();
 
-        if input.to_lowercase() == "quit" {break}
-        let equ = Equation::from(input);
+        // Special Commands
+        match input.to_lowercase().as_str() {
+            "quit" => break,
+
+            "clear" => {
+                print!("\x1b[2J\x1b[1;1H");
+                println!("Enter calculation: ");
+                continue
+            }
+
+            "help" => {
+                println!("\n-------------------------------------");
+                println!("Special Commands (CASE INSENSITIVE): ");
+                println!("Quit: Exits the program.");
+                println!("Clear: Clears the terminal.");
+                println!("Help: Displays this help message.");
+                println!("-------------------------------------\n");
+
+                println!("Enter calculation: ");
+                continue
+            }
+
+            _ => ()
+        }
+
+        let equ = match Equation::from(input) {
+            Ok(val) => val,
+            Err(_) => {
+                println!("Invalid symbols in equation!");
+                continue
+            }
+        };
+
         let calc = Calculator::new(equ);
-        let result = calc
-            .calculate()
-            .expect("Failed to calculate");
+        let result = match calc.calculate() {
+            Ok(val) => val,
+            Err(_) => {
+                println!("Invalid symbols in operator list!");
+                continue
+            }
+        };
 
         println!("Result: {}", result);
     }
