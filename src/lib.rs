@@ -1,53 +1,153 @@
-use regex::Regex;
-
-#[derive(Debug)]
-pub struct Calculation<'a> {
-    main_num: f64,
-    num_op: Vec<&'a str>,
-}
-
-impl Calculation<'_> {
-    pub fn build(calc: String) -> Self {
-        assert_eq!(vec!["-"], Regex::new("[0-9.]").unwrap().split("1-1").collect::<Vec<&str>>());
-        let re = Regex::new("[+-/*]").unwrap();
-        let nums: Vec<&str> = re
-            .split(&calc)
-            .collect();
-        let nums: Vec<CalculationOptions> = nums
-            .iter()
-            .map(|num| CalculationOptions::Number(num.parse::<f64>().expect("Expected a number.")))
-            .collect();
-
-        let re = Regex::new("[0-9]").unwrap();
-        let ops: Vec<&str> = re
-            .split(&calc)
-            .collect();
-        println!("{:?} {:?}", nums, ops);
-        let ops: Vec<CalculationOptions> = ops
-            .iter()
-            .map(|op| match *op {
-                "+" => Some(CalculationOptions::Plus),
-                "-" => Some(CalculationOptions::Minus),
-                "/" => Some(CalculationOptions::Divide),
-                "*" => Some(CalculationOptions::Multiply),
-                _ => None,
-            }.expect("Expected a mathematical operator!"))
-            .collect();
-        println!("{:?} {:?}", nums, ops);
-
-
-        Calculation {
-            main_num: 0.0,
-            num_op: Vec::new(),
-        }
-    }
-}
-
-#[derive(Debug)]
-enum CalculationOptions {
+#[derive(Debug, PartialEq, Clone)]
+enum EquationOptions {
     Plus,
     Minus,
     Multiply,
     Divide,
     Number(f64),
+}
+
+#[derive(Debug)]
+pub struct Equation {
+    num_ops: Vec<EquationOptions>,
+}
+
+impl Equation {
+    pub fn new() -> Self {
+        Equation {
+            num_ops: Vec::new(),
+        }
+    }
+
+    pub fn from(equation: String) -> Self {
+        let mut equ = Equation::new();
+        equ.set(equation);
+        equ
+    }
+
+    pub fn set(&mut self, calc: String) {
+        // Buffer for grouping a number together until an operator is reached.
+        let mut buf = String::new();
+        let mut num_ops: Vec<EquationOptions> = Vec::new();
+        
+        for char in calc.chars() {
+            match char {
+                '+' => self.pusher(EquationOptions::Plus, &mut buf, &mut num_ops),
+                '-' => self.pusher(EquationOptions::Minus, &mut buf, &mut num_ops),
+                '*' => self.pusher(EquationOptions::Multiply, &mut buf, &mut num_ops),
+                '/' => self.pusher(EquationOptions::Divide, &mut buf, &mut num_ops),
+                num => buf.push(num),
+            }
+        }
+        // Required to push remaining contents of buf to num_ops.
+        self.push_num(&mut buf, &mut num_ops);
+
+        self.num_ops = num_ops;
+    }
+
+    // Made for reduction of repetition in match statement in self.set()
+    fn pusher(&self, calc_option: EquationOptions, str: &mut String, vec: &mut Vec<EquationOptions>) {
+        self.push_num(str, vec);
+        self.push_op(calc_option, vec);
+        str.clear();
+    }
+
+    // Seperated from self.pusher() so that the functionality of pushing numbers and operators
+    // doesn't rely on another one existing to use.
+    fn push_num(&self, str: &mut String, vec: &mut Vec<EquationOptions>) {
+        vec.push(EquationOptions::Number(str.parse::<f64>().expect("Invalid Number")));
+    }
+
+    // Seperated from self.pusher for the same reason as self.push_num(). I think this is better
+    // for future scaling.
+    fn push_op(&self, calc_option: EquationOptions, vec: &mut Vec<EquationOptions>) {
+        vec.push(calc_option);
+    }
+} 
+
+#[derive(Debug)]
+pub struct Calculator {
+    equation: Equation,
+}
+
+impl Calculator {
+    pub fn new(equation: Equation) -> Calculator {
+        Calculator {
+            equation,
+        }
+    }
+
+    pub fn calculate(&self) -> Result<f64, &str> {
+        let mut curr_op: EquationOptions = EquationOptions::Plus;
+        let mut main_num: f64 = 0.0;
+
+        for op in self.equation.num_ops.iter() {
+            match op {
+                EquationOptions::Number(num) => {
+                    match curr_op {
+                        EquationOptions::Plus => main_num += num,
+                        EquationOptions::Minus => main_num -= num,
+                        EquationOptions::Multiply => main_num *= num,
+                        EquationOptions::Divide => main_num /= num,
+                        EquationOptions::Number(_) => return Err("Number found inside operator list."),
+                    }   
+                }
+                op => curr_op = op.clone(),
+            } 
+        }
+        Ok(main_num)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn one_plus_one_equals_two() {
+        let equ = Equation::from("1+1".to_string());
+        let calc = Calculator::new(equ);
+
+        let result = calc
+            .calculate()
+            .unwrap();
+
+        assert_eq!(result, 2.0);
+    }
+
+    #[test]
+    fn ten_times_twenty_six_equals_two_hundred_and_sixty() {
+        let equ = Equation::from("10*26".to_string());
+        let calc = Calculator::new(equ);
+
+        let result = calc
+            .calculate()
+            .unwrap();
+
+        assert_eq!(result, 260.0);
+    }
+
+    #[test]
+    fn one_plus_two_plus_three_equals_six() {
+        let equ = Equation::from("1+2+3".to_string());
+        let calc = Calculator::new(equ);
+
+        let result = calc
+            .calculate()
+            .unwrap();
+
+        assert_eq!(result, 6.0);
+    }
+
+    #[test]
+    fn ten_times_two_minus_three_plus_ninety_seven_divided_by_twelve_equals_nine_point_five() {
+        let equ = Equation::from("10*2-3+97/12".to_string());
+        let calc = Calculator::new(equ);
+
+        let result = calc
+            .calculate()
+            .unwrap();
+
+        assert_eq!(result, 9.5);
+    }
 }
