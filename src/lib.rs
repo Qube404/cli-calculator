@@ -1,4 +1,5 @@
 use std::str::FromStr;
+use regex::Regex;
 
 #[derive(Debug, PartialEq, Clone)]
 enum EquationOptions {
@@ -52,8 +53,68 @@ impl Equation {
         Ok(())
     }
 
-    pub fn calculate(&mut self) {
-        self.result += 10.0;
+    fn calculate(&mut self) {
+        self.calc_mult_div();
+        self.calc_plus_min();
+    }
+
+    fn calc_mult_div(&mut self) {
+        let ops = self
+            .equation
+            .clone();
+
+        let mut group: Vec<EquationOptions>;
+
+        for (i, op) in ops.iter().enumerate() {
+            match op {
+                EquationOptions::Multiply | EquationOptions::Divide => {
+                    //group = self.equation.drain(i-1..=i+1).collect(); 
+                    group = vec![EquationOptions::Number(1.0), EquationOptions::Plus, EquationOptions::Number(1.0)];
+                    let (mut num1, mut num2) = (0.0, 0.0);
+                    if let EquationOptions::Number(num) = group.get(0).expect("Missing values!") {
+                        num1 = *num;
+                    }
+
+                    if let EquationOptions::Number(num) = group.get(2).expect("Missing values!") {
+                        num2 = *num;
+                    }
+
+                    match op {
+                        EquationOptions::Multiply => {
+                            println!("{}", i);
+                            self.equation.insert(i-1, EquationOptions::Number(num1*num2));
+                        }
+
+                        EquationOptions::Divide => {
+                            println!("{}", i);
+                            self.equation.insert(i-1, EquationOptions::Number(num1/num2));
+                        }
+
+                        _ => ()
+                    }
+                }
+
+                _ => (),
+            }
+        }
+    }
+
+    fn calc_plus_min(&mut self) {
+        let mut curr_op = EquationOptions::Plus;
+
+        for op in self.equation.iter() {
+            match op {
+                EquationOptions::Number(num) => {
+                    match curr_op {
+                        EquationOptions::Plus => self.result += num,
+                        EquationOptions::Minus => self.result -= num,
+
+                        _ => panic!("Invalid operators inside function!"),
+                    }
+                }
+                op => curr_op = op.clone(),
+            }
+        }
     }
 
     fn pusher(&mut self, op: char, buf: &mut String) {
@@ -97,13 +158,13 @@ mod tests {
 
     #[test]
     fn _1_plus_2_plus_3_equals_6() {
-        let equ = Equation::from("1+2+3".to_string()).unwrap();
-        assert_eq!(equ.result, 6.0);
+        let equ = Equation::from("1+2*3".to_string()).unwrap();
+        assert_eq!(equ.result, 7.0);
     }
 
     #[test]
-    fn _10_times_2_minus_3_plus_97_divided_by_12_equals_9_point_5() {
-        let equ = Equation::from("10*2-3+97/12".to_string()).unwrap();
-        assert_eq!(equ.result, 9.5);
+    fn _10_times_2_minus_3_plus_97_divided_by_12_equals_22() {
+        let equ = Equation::from("10*2-3+25/5".to_string()).unwrap();
+        assert_eq!(equ.result, 22.0);
     }
 }
