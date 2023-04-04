@@ -1,6 +1,6 @@
 use std::io;
 
-use cli_qalculator::{Equation, Calculator};
+use cli_qalculator::Equation;
 
 fn main() {
     println!("Enter calculation: ");
@@ -49,15 +49,6 @@ fn main() {
             }
         };
 
-        let mut calc = Calculator::new(equ);
-        let result = match calc.calculate() {
-            Ok(val) => val,
-            Err(_) => {
-                println!("Invalid symbols in operator list!");
-                continue
-            }
-        };
-
-        println!("Result: {}", result);
+        println!("Result: {}", equ.result);
     }
 }
