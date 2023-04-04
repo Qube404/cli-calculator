@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{str::FromStr, iter::Enumerate};
 
 #[derive(Debug, PartialEq, Clone)]
 enum EquationOptions {
@@ -14,12 +14,14 @@ type CalculationError = <f64 as FromStr>::Err;
 #[derive(Debug)]
 pub struct Equation {
     num_ops: Vec<EquationOptions>,
+    order_flag: bool,
 }
 
 impl Equation {
     pub fn new() -> Self {
         Equation {
             num_ops: Vec::new(),
+            order_flag: false,
         }
     }
 
@@ -33,6 +35,10 @@ impl Equation {
         // Buffer for grouping a number together until an operator is reached.
         let mut buf = String::new();
         let mut num_ops: Vec<EquationOptions> = Vec::new();
+
+        // Pretty regex I don't want to have to figure out again if I decide to use it in the
+        // future.
+        // let re = Regex::new(r"^[0-9]+(.[0-9]+)([-+*/]{1}[0-9]+(.[0-9+]+))*$").unwrap();
         
         for char in calc.chars() {
             match char {
@@ -43,6 +49,7 @@ impl Equation {
                 num => buf.push(num),
             }
         }
+
         // Required to push remaining contents of buf to num_ops.
         self.push_num(&mut buf, &mut num_ops)?;
 
@@ -84,9 +91,23 @@ impl Calculator {
         }
     }
 
-    pub fn calculate(&self) -> Result<f64, ()> {
+    pub fn calculate(&mut self) -> Result<f64, ()> {
         let mut curr_op: EquationOptions = EquationOptions::Plus;
         let mut main_num: f64 = 0.0;
+
+        match self.equation.num_ops.remove(0) {
+            EquationOptions::Number(num) => main_num += num,
+            _ => panic!("No number found!"),
+        }
+
+        let mut filtered: Vec<EquationOptions> = Vec::new();
+        let filter = &self
+            .equation
+            .num_ops;
+
+        self.mult_div_loop(&filter, &mut filtered);
+        self.plus_minus_loop(&filter, &mut filtered);
+        println!("{:?}", filtered);
 
         for op in self.equation.num_ops.iter() {
             match op {
@@ -97,12 +118,62 @@ impl Calculator {
                         EquationOptions::Multiply => main_num *= num,
                         EquationOptions::Divide => main_num /= num,
                         EquationOptions::Number(_) => return Err(()),
-                    }   
+                    }
                 }
+
                 op => curr_op = op.clone(),
-            } 
+            }
         }
+
         Ok(main_num)
+    }
+
+    fn plus_minus_loop(&self, filter: &Vec<EquationOptions>, filtered: &mut Vec<EquationOptions>) {
+        let filter = filter
+            .iter()
+            .enumerate();
+
+        for (i, op) in filter.clone() {
+            match op {
+                EquationOptions::Plus |
+                EquationOptions::Minus => {
+                    filtered.push(op.clone());
+                    filtered.push(self
+                        .equation
+                        .num_ops
+                        .get(i + 1)
+                        .expect("Invalid number of EquationOptions?")
+                        .clone()
+                    );
+                }
+
+                _ => (),
+            }
+        }
+    }
+
+    fn mult_div_loop(&self, filter: &Vec<EquationOptions>, filtered: &mut Vec<EquationOptions>) {
+        let filter = filter
+            .iter()
+            .enumerate();
+
+        for (i, op) in filter.clone() {
+            match op {
+                EquationOptions::Multiply |
+                EquationOptions::Divide => {
+                    filtered.push(op.clone());
+                    filtered.push(self
+                        .equation
+                        .num_ops
+                        .get(i + 1)
+                        .unwrap()
+                        .clone()
+                    );
+                }
+
+                _ => (),
+            }
+        }
     }
 }
 

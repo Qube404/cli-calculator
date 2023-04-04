@@ -49,7 +49,7 @@ fn main() {
             }
         };
 
-        let calc = Calculator::new(equ);
+        let mut calc = Calculator::new(equ);
         let result = match calc.calculate() {
             Ok(val) => val,
             Err(_) => {
