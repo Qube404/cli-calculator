@@ -5,7 +5,7 @@ type CalculationError = <f64 as FromStr>::Err;
 #[derive(Debug)]
 pub struct Equation {
     equation: Vec<String>,
-    pub result: f64,
+    result: f64,
 }
 
 impl Equation {
@@ -24,6 +24,10 @@ impl Equation {
         Ok(equ)
     }
 
+    pub fn result(&self) -> f64 {
+        self.result
+    }
+ 
     // Turns the string into a vector of EquationOption enum variants.
     pub fn set(&mut self, calc: String) -> Result<(), CalculationError> {
         // Buffer for grouping a number together until an operator is reached.
@@ -37,7 +41,6 @@ impl Equation {
         }
         self.equation.push(buf);
         self.calculate()?;
-        println!("{:?}", self.equation);
 
         Ok(())
     }

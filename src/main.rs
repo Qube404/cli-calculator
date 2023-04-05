@@ -1,6 +1,6 @@
 use std::io;
 
-use cli_qalculator::Equation;
+use cli_calculator::Equation;
 
 fn main() {
     println!("Enter calculation: ");
@@ -49,6 +49,6 @@ fn main() {
             }
         };
 
-        println!("Result: {}", equ.result);
+        println!("Result: {}", equ.result());
     }
 }
