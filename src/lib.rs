@@ -103,6 +103,22 @@ impl Equation {
     }
 
     fn calc_plus_min(&mut self) {
+        let mut curr_op: &str = "+";
+        let mut main_num: f64 = 0.0;
+
+        for op in self.equation.iter() {
+            match op.as_str() {
+                "+" | "-" => curr_op = op.as_str(),
+                num => {
+                    match curr_op {
+                        "+" => main_num += num.parse::<f64>().unwrap(),
+                        "-" => main_num -= num.parse::<f64>().unwrap(),
+                        _ => (),
+                    }   
+                }
+            } 
+        }
+        self.result = main_num;
     }
 
     fn push_op(&mut self, op: char, buf: &mut String, flag: &mut bool) {
