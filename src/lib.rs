@@ -4,6 +4,7 @@ type CalculationError = <f64 as FromStr>::Err;
 
 #[derive(Debug)]
 pub struct Equation {
+    raw_equation: String,
     equation: Vec<String>,
     result: f64,
 }
@@ -12,6 +13,7 @@ impl Equation {
     // Returns new Equation with default values.
     pub fn new() -> Self {
         Equation {
+            raw_equation: String::new(),
             equation: Vec::new(),
             result: 0.0,
         }
@@ -24,13 +26,18 @@ impl Equation {
         Ok(equ)
     }
 
-    pub fn result(&self) -> f64 {
+    pub fn get_result(&self) -> f64 {
         self.result
+    }
+    
+    pub fn get_equation(&self) -> String {
+        self.raw_equation.clone()
     }
  
     // Turns the string into a vector of EquationOption enum variants.
     pub fn set(&mut self, calc: String) -> Result<(), CalculationError> {
         // Buffer for grouping a number together until an operator is reached.
+        self.raw_equation = calc.clone();
         let mut buf = String::new();
         let mut flag = false;
         for char in calc.chars() {
