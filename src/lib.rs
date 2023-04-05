@@ -3,18 +3,17 @@ use regex::Regex;
 
 #[derive(Debug, PartialEq, Clone)]
 enum EquationOptions {
-    Plus,
-    Minus,
-    Multiply,
-    Divide,
-    Number(f64),
+    Plus(f64),
+    Minus(f64),
+    Multiply(f64, f64),
+    Divide(f64, f64),
 }
 
 type CalculationError = <f64 as FromStr>::Err;
 
 #[derive(Debug)]
 pub struct Equation {
-    equation: Vec<EquationOptions>,
+    equation: Vec<String>,
     pub result: f64,
 }
 
@@ -38,17 +37,16 @@ impl Equation {
     pub fn set(&mut self, calc: String) -> Result<(), CalculationError> {
         // Buffer for grouping a number together until an operator is reached.
         let mut buf = String::new();
+        let mut flag = false;
         for char in calc.chars() {
             match char {
-                '+' => self.pusher('+', &mut buf),
-                '-' => self.pusher('-', &mut buf),
-                '*' => self.pusher('*', &mut buf),
-                '/' => self.pusher('/', &mut buf),
+                '+' | '-' | '*' | '/' => self.push_op(char, &mut buf, &mut flag),
                 _ => buf.push(char),
             }
         }
-        self.push_num(&mut buf);
+        self.equation.push(buf);
         self.calculate();
+        println!("{:?}", self.equation);
 
         Ok(())
     }
@@ -59,82 +57,67 @@ impl Equation {
     }
 
     fn calc_mult_div(&mut self) {
-        let ops = self
+        self.equation = 
+            self
             .equation
-            .clone();
+            .iter()
+            .map(|str| {
+                let mut buf: String = String::new();
+                let mut vec: Vec<String> = Vec::new();
 
-        let mut group: Vec<EquationOptions>;
+                let mut main_num: f64 = 0.0;
+                let mut curr_op: String = String::from("+");
 
-        for (i, op) in ops.iter().enumerate() {
-            match op {
-                EquationOptions::Multiply | EquationOptions::Divide => {
-                    //group = self.equation.drain(i-1..=i+1).collect(); 
-                    group = vec![EquationOptions::Number(1.0), EquationOptions::Plus, EquationOptions::Number(1.0)];
-                    let (mut num1, mut num2) = (0.0, 0.0);
-                    if let EquationOptions::Number(num) = group.get(0).expect("Missing values!") {
-                        num1 = *num;
-                    }
+                if str.contains("*") || str.contains("/") {
+                    for char in str.chars() {
+                        match char {
+                            '*' | '/' => {
+                                vec.push(buf.to_string());
+                                vec.push(char.to_string());
+                                buf.clear();
+                            }
 
-                    if let EquationOptions::Number(num) = group.get(2).expect("Missing values!") {
-                        num2 = *num;
-                    }
-
-                    match op {
-                        EquationOptions::Multiply => {
-                            println!("{}", i);
-                            self.equation.insert(i-1, EquationOptions::Number(num1*num2));
+                            _ => buf.push(char),
                         }
+                    } 
+                    vec.push(buf);
 
-                        EquationOptions::Divide => {
-                            println!("{}", i);
-                            self.equation.insert(i-1, EquationOptions::Number(num1/num2));
+                    for op in vec {
+                        match op.as_str() {
+                            "*" | "/" => curr_op = op.clone(),
+                            num => {
+                                match curr_op.as_str() {
+                                    "+" => main_num += num.parse::<f64>().unwrap(),
+                                    "*" => main_num *= num.parse::<f64>().unwrap(),
+                                    "/" => main_num /= num.parse::<f64>().unwrap(),
+                                    _ => (),
+                                }
+                            }
                         }
-
-                        _ => ()
                     }
+
+                    return main_num.to_string();
                 }
-
-                _ => (),
-            }
-        }
+                str.to_string()
+            }).collect::<Vec<String>>();
     }
 
     fn calc_plus_min(&mut self) {
-        let mut curr_op = EquationOptions::Plus;
-
-        for op in self.equation.iter() {
-            match op {
-                EquationOptions::Number(num) => {
-                    match curr_op {
-                        EquationOptions::Plus => self.result += num,
-                        EquationOptions::Minus => self.result -= num,
-
-                        _ => panic!("Invalid operators inside function!"),
-                    }
-                }
-                op => curr_op = op.clone(),
-            }
-        }
     }
 
-    fn pusher(&mut self, op: char, buf: &mut String) {
-        self.push_num(buf);
-        self.push_op(&op);
-        buf.clear();
-    }
-
-    fn push_num(&mut self, buf: &mut String) {
-        let num = buf.parse::<f64>().unwrap();
-        self.equation.push(EquationOptions::Number(num));
-        buf.clear();
-    }
-
-    fn push_op(&mut self, op: &char) {
+    fn push_op(&mut self, op: char, buf: &mut String, flag: &mut bool) {
         match op {
-            '+' => self.equation.push(EquationOptions::Plus),
-            '-' => self.equation.push(EquationOptions::Minus),
-            '*' => self.equation.push(EquationOptions::Multiply),
-            '/' => self.equation.push(EquationOptions::Divide),
+            '+' | '-' => {
+                self.equation.push(buf.to_string());
+                self.equation.push(op.to_string());
+                buf.clear()
+            }
+
+            '*' | '/' => {
+                buf.push(op);
+                *flag = true;
+            }
+
             _ => panic!("Invalid character passed to function."),
         }
     }
