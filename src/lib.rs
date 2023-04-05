@@ -1,13 +1,4 @@
 use std::str::FromStr;
-use regex::Regex;
-
-#[derive(Debug, PartialEq, Clone)]
-enum EquationOptions {
-    Plus(f64),
-    Minus(f64),
-    Multiply(f64, f64),
-    Divide(f64, f64),
-}
 
 type CalculationError = <f64 as FromStr>::Err;
 
@@ -45,18 +36,19 @@ impl Equation {
             }
         }
         self.equation.push(buf);
-        self.calculate();
+        self.calculate()?;
         println!("{:?}", self.equation);
 
         Ok(())
     }
 
-    fn calculate(&mut self) {
-        self.calc_mult_div();
-        self.calc_plus_min();
+    fn calculate(&mut self) -> Result<(), CalculationError> {
+        self.calc_mult_div()?;
+        self.calc_plus_min()?;
+        Ok(())
     }
 
-    fn calc_mult_div(&mut self) {
+    fn calc_mult_div(&mut self) -> Result<(), CalculationError> {
         self.equation = 
             self
             .equation
@@ -87,9 +79,9 @@ impl Equation {
                             "*" | "/" => curr_op = op.clone(),
                             num => {
                                 match curr_op.as_str() {
-                                    "+" => main_num += num.parse::<f64>().unwrap(),
-                                    "*" => main_num *= num.parse::<f64>().unwrap(),
-                                    "/" => main_num /= num.parse::<f64>().unwrap(),
+                                    "+" => main_num += num.parse::<f64>().expect("Invalid characters."),
+                                    "*" => main_num *= num.parse::<f64>().expect("Invalid characters."),
+                                    "/" => main_num /= num.parse::<f64>().expect("Invalid characters."),
                                     _ => (),
                                 }
                             }
@@ -100,9 +92,10 @@ impl Equation {
                 }
                 str.to_string()
             }).collect::<Vec<String>>();
+        Ok(())
     }
 
-    fn calc_plus_min(&mut self) {
+    fn calc_plus_min(&mut self) -> Result<(), CalculationError> {
         let mut curr_op: &str = "+";
         let mut main_num: f64 = 0.0;
 
@@ -111,14 +104,16 @@ impl Equation {
                 "+" | "-" => curr_op = op.as_str(),
                 num => {
                     match curr_op {
-                        "+" => main_num += num.parse::<f64>().unwrap(),
-                        "-" => main_num -= num.parse::<f64>().unwrap(),
+                        "+" => main_num += num.parse::<f64>()?,
+                        "-" => main_num -= num.parse::<f64>()?,
                         _ => (),
                     }   
                 }
             } 
         }
+        self.equation.clear();
         self.result = main_num;
+        Ok(())
     }
 
     fn push_op(&mut self, op: char, buf: &mut String, flag: &mut bool) {
