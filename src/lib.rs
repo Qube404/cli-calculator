@@ -1,5 +1,5 @@
 use regex::Regex;
-use std::error::Error;
+use anyhow::Result;
 
 #[derive(Debug)]
 pub struct Equation {
@@ -19,7 +19,7 @@ impl Equation {
     }
 
     // Does new and set in one function.
-    pub fn from(equation: String) -> Result<Self, Box<dyn Error>> {
+    pub fn from(equation: String) -> Result<Equation> {
         let mut equ = Equation::new();
         equ.set(equation)?;
         Ok(equ)
@@ -34,7 +34,7 @@ impl Equation {
     }
  
     // Turns the string into a vector of EquationOption enum variants.
-    pub fn set(&mut self, calc: String) -> Result<(), Box<dyn Error>> {
+    pub fn set(&mut self, calc: String) -> Result<()> {
         let re = Regex::new(r"^[0-9]+(\.[0-9]+)*([-+*/]{1}[0-9]+(\.[0-9]+){0,1})*$").expect("Invalid Regex!");
         self.validate(re, &calc)?;
 
@@ -53,11 +53,11 @@ impl Equation {
         Ok(())
     }
 
-    fn validate(&self, re: Regex, str: &String) -> Result<(), Box<dyn Error>> {
+    fn validate(&self, re: Regex, str: &String) -> Result<()> {
         if !re.is_match(&str) {
             return Err(
-                Box::new(
-                    regex::Error::Syntax("Invalid Characters in equation!".to_string())
+                *Box::new(
+                    regex::Error::Syntax("Invalid Characters in equation!".to_string()).into()
                 )
             );
         }
@@ -65,13 +65,13 @@ impl Equation {
         Ok(())
     }
 
-    fn calculate(&mut self) -> Result<(), Box<dyn Error>> {
+    fn calculate(&mut self) -> Result<()> {
         self.calc_mult_div()?;
         self.calc_plus_min()?;
         Ok(())
     }
 
-    fn calc_mult_div(&mut self) -> Result<(), Box<dyn Error>> {
+    fn calc_mult_div(&mut self) -> Result<()> {
         self.equation = 
             self
             .equation
@@ -118,7 +118,7 @@ impl Equation {
         Ok(())
     }
 
-    fn calc_plus_min(&mut self) -> Result<(), Box<dyn Error>> {
+    fn calc_plus_min(&mut self) -> Result<()> {
         let mut curr_op: &str = "+";
         let mut main_num: f64 = 0.0;
 
