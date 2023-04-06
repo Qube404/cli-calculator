@@ -35,7 +35,7 @@ impl Equation {
  
     // Turns the string into a vector of EquationOption enum variants.
     pub fn set(&mut self, calc: String) -> Result<()> {
-        let re = Regex::new(r"^[0-9]+(\.[0-9]+)*([-+*/]{1}[0-9]+(\.[0-9]+){0,1})*$").expect("Invalid Regex!");
+        let re = Regex::new(r"^[0-9]+(\.[0-9]+)*([-+*/]{1}[0-9]+(\.[0-9]+){0,1})*$").expect("invalid regex");
         self.validate(re, &calc)?;
 
         self.raw_equation = calc.clone();
@@ -57,7 +57,7 @@ impl Equation {
         if !re.is_match(&str) {
             return Err(
                 *Box::new(
-                    regex::Error::Syntax("Invalid Characters in equation!".to_string()).into()
+                    regex::Error::Syntax("invalid characters in equation".to_string()).into()
                 )
             );
         }
@@ -102,9 +102,9 @@ impl Equation {
                             "*" | "/" => curr_op = op.clone(),
                             num => {
                                 match curr_op.as_str() {
-                                    "+" => main_num += num.parse::<f64>().expect("Invalid characters."),
-                                    "*" => main_num *= num.parse::<f64>().expect("Invalid characters."),
-                                    "/" => main_num /= num.parse::<f64>().expect("Invalid characters."),
+                                    "+" => main_num += num.parse::<f64>().expect("invalid characters"),
+                                    "*" => main_num *= num.parse::<f64>().expect("invalid characters"),
+                                    "/" => main_num /= num.parse::<f64>().expect("invalid characters"),
                                     _ => (),
                                 }
                             }
@@ -154,7 +154,7 @@ impl Equation {
 
             // Panics instead of handles because invalid characters indicate a bug
             // in the library as opposed to invalid user input.
-            _ => panic!("Invalid character passed to function."),
+            _ => panic!("invalid character passed to function"),
         }
     }
 } 

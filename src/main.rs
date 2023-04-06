@@ -1,6 +1,6 @@
 use std::io;
 
-use cli_calculator::Equation;
+use calc_lib::Equation;
 
 fn main() {
     println!("Enter calculation: ");
@@ -11,7 +11,7 @@ fn main() {
 
         stdin
             .read_line(&mut input)
-            .expect("Could not read line!");
+            .expect("could not read line");
 
         // Removes trailing \n
         input.pop();
@@ -44,7 +44,7 @@ fn main() {
         let equ = match Equation::from(input) {
             Ok(val) => val,
             Err(_) => {
-                println!("Invalid symbols in equation!");
+                println!("invalid symbols in equation");
                 continue
             }
         };
