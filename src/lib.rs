@@ -1,6 +1,5 @@
-use std::str::FromStr;
-
-type CalculationError = <f64 as FromStr>::Err;
+use regex::Regex;
+use std::error::Error;
 
 #[derive(Debug)]
 pub struct Equation {
@@ -20,7 +19,7 @@ impl Equation {
     }
 
     // Does new and set in one function.
-    pub fn from(equation: String) -> Result<Self, CalculationError> {
+    pub fn from(equation: String) -> Result<Self, Box<dyn Error>> {
         let mut equ = Equation::new();
         equ.set(equation)?;
         Ok(equ)
@@ -35,8 +34,10 @@ impl Equation {
     }
  
     // Turns the string into a vector of EquationOption enum variants.
-    pub fn set(&mut self, calc: String) -> Result<(), CalculationError> {
-        // Buffer for grouping a number together until an operator is reached.
+    pub fn set(&mut self, calc: String) -> Result<(), Box<dyn Error>> {
+        let re = Regex::new(r"^[0-9]+(\.[0-9]+)*([-+*/]{1}[0-9]+(\.[0-9]+){0,1})*$").expect("Invalid Regex!");
+        self.validate(re, &calc)?;
+
         self.raw_equation = calc.clone();
         let mut buf = String::new();
         let mut flag = false;
@@ -52,13 +53,25 @@ impl Equation {
         Ok(())
     }
 
-    fn calculate(&mut self) -> Result<(), CalculationError> {
+    fn validate(&self, re: Regex, str: &String) -> Result<(), Box<dyn Error>> {
+        if !re.is_match(&str) {
+            return Err(
+                Box::new(
+                    regex::Error::Syntax("Invalid Characters in equation!".to_string())
+                )
+            );
+        }
+
+        Ok(())
+    }
+
+    fn calculate(&mut self) -> Result<(), Box<dyn Error>> {
         self.calc_mult_div()?;
         self.calc_plus_min()?;
         Ok(())
     }
 
-    fn calc_mult_div(&mut self) -> Result<(), CalculationError> {
+    fn calc_mult_div(&mut self) -> Result<(), Box<dyn Error>> {
         self.equation = 
             self
             .equation
@@ -105,7 +118,7 @@ impl Equation {
         Ok(())
     }
 
-    fn calc_plus_min(&mut self) -> Result<(), CalculationError> {
+    fn calc_plus_min(&mut self) -> Result<(), Box<dyn Error>> {
         let mut curr_op: &str = "+";
         let mut main_num: f64 = 0.0;
 
@@ -139,6 +152,8 @@ impl Equation {
                 *flag = true;
             }
 
+            // Panics instead of handles because invalid characters indicate a bug
+            // in the library as opposed to invalid user input.
             _ => panic!("Invalid character passed to function."),
         }
     }

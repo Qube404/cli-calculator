@@ -49,6 +49,6 @@ fn main() {
             }
         };
 
-        println!("Result: {}", equ.result());
+        println!("Result: {}", equ.get_result());
     }
 }
